@@ -1,0 +1,10 @@
+library(readr)
+library(dplyr)
+Monarchs <- read.csv("danish_monarchs.csv")
+library(danish_monarchs.csv)
+View(danish_monarchs)
+
+library(tidyverse)
+view(Monarchs)
+dir.create("data")
+library("tidyverse")
