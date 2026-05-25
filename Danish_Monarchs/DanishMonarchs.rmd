@@ -1,0 +1,121 @@
+---
+title: "Danish_Monarchs"
+author: "Aske Høj Andersen, Vladimir Bountovski and Oscar Robert Nixon"
+date: "2026-03-12"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Load in the Monarchs
+
+```{r eval=TRUE}
+
+#Testing different functions
+monarchs1 <- read.csv("data/danish_monarchs.csv")
+
+monarchs2 <- read_csv("data/danish_monarchs.csv")
+
+monarchs3 <- read.csv2("data/danish_monarchs.csv")
+
+monarchs4 <- read_csv2("data/danish_monarchs.csv")
+```
+
+1. Which of these functions is a `tidyverse` function? 
+read_csv(): Tidyverse function used for reading standard comma-separated files.
+read_csv2(): Tidyverse function used for reading semicolon-separated files.
+
+2. What is the result of running `class()` on the `kings` object created with a tidyverse function.
+[1] "spec_tbl_df" "tbl_df"      "tbl"         "data.frame" - identifies it as a tibble (tidyverse data frame).
+
+3. How many columns does the object have when created with these different functions?
+dim() gives me 53 collums
+
+4. Show the dataset so that we can see how R interprets each column
+
+```{r eval = TRUE}
+monarchs <- read_csv("data/danish_monarchs.csv")
+
+class(monarchs)
+
+dim(monarchs)
+
+glimpse(monarchs)
+
+view(monarchs)
+```
+
+
+### Calculate the duration of reign for all danish kings/queens
+
+```{r}
+# YOUR CODE
+
+monarchs_duration <- monarchs %>%
+  mutate(durationreign=ReignEnd-ReignStart)
+
+view(monarchs_duration)
+glimpse(monarchs_duration)
+tail(monarchs_duration)
+```
+
+### Calculating average reign for all rulers
+
+```{r}
+# YOUR CODE
+duration <- as.numeric(monarchs_duration$durationreign)
+class(duration)
+
+mean(duration, na.rm = TRUE)
+```
+
+### Monarchs with longer than average reign
+
+```{r}
+# YOUR CODE
+avg_duration <- mean(monarchs_duration$durationreign, na.rm = TRUE)
+
+monarchs_filtered <- monarchs %>%
+  filter(duration >= avg_duration)
+
+monarchs_filtered
+
+monarchs_filtered %>%
+  count()
+
+```
+
+
+### Days of the longest three reigns
+
+```{r}
+
+longestreign <- monarchs %>%
+  arrange(desc(monarchs_duration$durationreign)) %>% 
+  slice(1:3)
+
+monarchs_duration <- monarchs %>% 
+  mutate(days=monarchs_duration$durationreign*365)
+
+glimpse(monarchs_duration)
+  
+```
+
+
+### Monarchs duration of reign through time
+
+```{r}
+# YOUR CODE
+
+monarchs_duration %>%
+  mutate(midyear = ReignStart + (ReignEnd - ReignStart)/2) %>%
+  ggplot(aes(x = midyear, y = duration)) +
+  geom_point() +
+  geom_smooth()
+
+```
+
