@@ -1,0 +1,341 @@
+# SETUP ------------------------------------------------------------------
+# Install required packages
+library(tidyverse)
+library(readr)
+
+# IMPORT DATASET ---------------------------------------------------------
+
+tiende_bog <- read_csv("tiende_bog.xlsx - Tiendedata.csv")
+
+# DATA CLEANING -----------------------------------------------------------
+
+# Remove spaces in location column 
+tiende_bog$Sted <- trimws(tiende_bog$Sted)
+
+# Correct translation /spelling inconsitency in location names:
+# "Affuilltørp husfolk" samles med "Affuiltorp husfolk"
+tiende_bog$Sted[
+  tiende_bog$Sted == "Affuilltørp husfolk"
+] <- "Affuiltorp husfolk"
+
+# DATA CHECK ----------------------------------------------------------------
+
+table(tiende_bog$Sted)
+
+View(tiende_bog)
+
+summary(tiende_bog)
+
+colnames(tiende_bog)
+
+str(tiende_bog)
+
+# FIGURE 1 - GRAIN PRODUCTION -------------------------------------------------
+
+# PREPARING OF FIGURE 1 (DEVELOPMENT IN GRAIN PRODUCTION)
+# Explore and examine the data in order to understand and clean it before use.
+
+unique(tiende_bog$Hvede)
+
+unique(tiende_bog$Rug)
+
+unique(tiende_bog$Byg)
+
+unique(tiende_bog$Havre)
+
+# Data cleaning and processing to make the dataset easier to work with. 
+# Due to the historical measurement system, values are converted into a common unit.
+
+tiende_bog <- tiende_bog %>%
+  mutate(
+    Hvede_t = case_when(
+      Hvede == "1 t" ~ 1,
+      Hvede == "2 t" ~ 2,
+      Hvede == "0.5 t" ~ 0.5,
+      Hvede == "8 k" ~ 8/20,
+      Hvede == "11 k" ~ 11/20,
+      Hvede == "14 k" ~ 14/20,
+      TRUE ~ NA_real_
+    ),
+    
+    Rug_t = case_when(
+      Rug == "1 t" ~ 1,
+      Rug == "1.5 t" ~ 1.5,
+      Rug == "0.5 t" ~ 0.5,
+      Rug == "16 k" ~ 16/20,
+      Rug == "19 k" ~ 19/20,
+      Rug == "24 k" ~ 24/20,
+      TRUE ~ NA_real_
+    ), 
+    Byg_t = case_when(
+      Byg == "1 t" ~ 1,
+      Byg == "3 t" ~ 3,
+      Byg == "1.5 t" ~ 1.5,
+      Byg == "16 k" ~ 16/20,
+      Byg == "19 k" ~ 19/20,
+      Byg == "24 k" ~ 24/20,
+      TRUE ~ NA_real_
+    ),
+    
+    Havre_t = case_when(
+      Havre == "1 t" ~ 1,
+      Havre == "2 t" ~ 2,
+      Havre == "0.5 t" ~ 0.5,
+      Havre == "8 k" ~ 8/20,
+      Havre == "11 k" ~ 11/20,
+      Havre == "14 k" ~ 14/20,
+      TRUE ~ NA_real_
+    ),
+  )
+    
+# FIGURE 1: Development in production over time (GGPLOT)
+
+# HVEDE
+
+hvede_aar <- tiende_bog %>%
+  group_by(År) %>%
+  summarise(
+    hvede = sum(Hvede_t, na.rm = TRUE)
+  )
+
+
+View(hvede_aar)
+
+ggplot(hvede_aar, aes(x = År, y = hvede)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Udvikling i hvedeproduktion over tid",
+    x = "År",
+    y = "Hvede (tønder)"
+  )
+
+# RUG
+
+rug_aar <- tiende_bog %>%
+  group_by(År) %>%
+  summarise(
+    rug = sum(Rug_t, na.rm = TRUE)
+  )
+
+View(rug_aar)
+
+ggplot(rug_aar, aes(x = År, y = rug)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Udvikling i rugproduktion over tid",
+    x = "År",
+    y = "Rug (tønder)"
+  )
+
+# BYG
+
+byg_aar <- tiende_bog %>%
+  group_by(År) %>%
+  summarise(
+    byg = sum(Byg_t, na.rm = TRUE)
+  )
+
+View(byg_aar)
+
+ggplot(byg_aar, aes(x = År, y = byg)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Udvikling i bygproduktion over tid",
+    x = "År",
+    y = "Byg (tønder)"
+  )
+
+# HAVRE
+
+havre_aar <- tiende_bog %>%
+  group_by(År) %>%
+  summarise(
+    havre = sum(Havre_t, na.rm = TRUE)
+  )
+
+View(havre_aar)
+
+ggplot(havre_aar, aes(x = År, y = havre)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Udvikling i havreproduktion over tid",
+    x = "År",
+    y = "Havre (tønder)"
+  )
+
+# COMBINED FOR FIGURE 1
+
+samlet_aar <- hvede_aar %>%
+  left_join(rug_aar, by = "År") %>%
+  left_join(byg_aar, by = "År") %>%
+  left_join(havre_aar, by = "År")
+
+ggplot(samlet_aar, aes(x = År)) +
+  geom_line(aes(y = hvede, colour = "Hvede")) +
+  geom_line(aes(y = rug, colour = "Rug")) +
+  geom_line(aes(y = byg, colour = "Byg")) +
+  geom_line(aes(y = havre, colour = "Havre")) +
+  scale_x_continuous(
+    breaks = seq(1618, 1629, 1)
+  ) +
+  scale_colour_manual(
+    values = c(
+      "Hvede" = "gold",
+      "Rug" = "darkgreen",
+      "Byg" = "red",
+      "Havre" = "blue"
+    )
+  ) +
+  labs(
+    title = "Udvikling i kornproduktion over tid",
+    x = "År",
+    y = "Trave",
+    colour = "Kornsort"
+  )
+
+# FIGURE 2 – DEVELOPMENT BY LOCATION ---------------------------------------
+
+# PREPARATION OF FIGURE 2
+# Locations over time, including production and payments.
+
+sted_tid <- tiende_bog %>%
+  group_by(År, Sted) %>%
+  summarise(
+    samlet =
+      sum(Hvede_t, na.rm = TRUE) +
+      sum(Rug_t, na.rm = TRUE) +
+      sum(Byg_t, na.rm = TRUE) +
+      sum(Havre_t, na.rm = TRUE) +
+      sum(Lam, na.rm = TRUE) +
+      sum(Gris, na.rm = TRUE)
+  )
+
+
+#GGPLOT FOR FIGURE 2
+
+ggplot(
+  sted_tid,
+  aes(
+    x = År,
+    y = samlet,
+    colour = Sted
+  )
+) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(
+    breaks = seq(1618, 1629, 1)
+  ) +
+  labs(
+    title = "Udvikling i tiendeproduktion fordelt på sted",
+    x = "År",
+    y = "Samlet produktion og betaling",
+    colour = "Sted"
+  )
+
+# BAR CHART 1 – LIVESTOCK DEVELOPMENT---------------------------------------
+
+# Load dataset
+tiende_bog <- read_csv("tiende_bog.xlsx - Tiendedata.csv")
+
+
+# Reshape data to long format
+data_long <- pivot_longer(
+  tiende_bog,
+  cols = c("Lam", "Gris", "Kalv"),
+  names_to = "dyr",
+  values_to = "antal"
+)
+
+# Remove NA and zero values
+data_long <- data_long[!is.na(data_long$antal), ]
+
+# Summarise livestock numbers by year and animal type
+data_sum <- data_long %>%
+  group_by(År, dyr) %>%
+  summarise(antal = sum(antal), .groups = "drop")
+
+# Create bar chart
+ggplot(data_sum, aes(x = År, y = antal, fill = dyr)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = unique(data_sum$År)) +
+  labs(
+    x = "År",
+    y = "Samlet antal",
+    fill = "Dyretype"
+  ) +
+  theme_minimal()
+
+
+# BAR CHART 2 ---------------------------------------------------------------
+library(tidyverse)
+
+# Check data structure and value formats
+str(tiende_bog)
+
+# Clean text values
+tiende_bog$`Tiende Lam` <- as.numeric(
+  gsub(",", ".", tiende_bog$`Tiende Lam`)
+)
+
+# Reshape data to long format
+data_long <- pivot_longer(
+  tiende_bog,
+  cols = c("Tiende Lam", "Tiende Gris"),
+  names_to = "dyr",
+  values_to = "antal"
+)
+
+# Remove NA and zero values
+data_long <- data_long[!is.na(data_long$antal), ]
+
+# Summarise livestock counts by year and animal type
+data_sum <- data_long %>%
+  group_by(År, dyr) %>%
+  summarise(antal = sum(antal), .groups = "drop")
+
+# Create bar chart
+ggplot(data_sum, aes(x = År, y = antal, fill = dyr)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = unique(data_long$År)) +
+  labs(
+    x = "År",
+    y = "Samlet antal",
+    fill = "Dyretype"
+  ) +
+  theme_minimal()
+
+
+# BAR CHART 3 ---------------------------------------------------------------
+
+# Reshape data to long format
+data_long <- pivot_longer(
+  tiende_bog,
+  cols = c("Restance Lam", "Restance Gris"),
+  names_to = "dyr",
+  values_to = "antal"
+)
+
+# Remove NA and zero values
+data_long <- data_long[!is.na(data_long$antal), ]
+
+
+# Summarise livestock counts by year and animal type
+data_sum <- data_long %>%
+  group_by(År, dyr) %>%
+  summarise(antal = sum(antal), .groups = "drop")
+
+# Low bar chart
+ggplot(data_sum, aes(x = År, y = antal, fill = dyr)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = unique(data_sum$År)) +
+  labs(
+    x = "År",
+    y = "Samlet antal",
+    fill = "Dyretype"
+  ) +
+  theme_minimal()
